@@ -19,28 +19,30 @@ export default {
   },
   data() {
     return {
-      adata: {},
+      cdata: {
+        min: 0,
+        max: 2,
+        lowColor: '#ffe8e8',
+        highColor: '#ff0000',
+        seriesData: []
+      },
       options: {},
-      isShow: false,
       uid: 1,
     }
   },
   watch: {
-    adata: {
+    cdata: {
       handler(newData) {
-        if (Object.keys(newData).length > 0) {
-          this.isShow = true
-        }
+        // if (Object.keys(newData).length > 0) {
+        //   this.isShow = true
+        // }
+        const _this = this
         this.options = {
           title: {
-            text: "Population Density of Hong Kong （2011）",
-            subtext: "Data from Wikipedia",
-            sublink:
-              "http://zh.wikipedia.org/wiki/%E9%A6%99%E6%B8%AF%E8%A1%8C%E6%94%BF%E5%8D%80%E5%8A%83#cite_note-12",
+            text: newData.title,
           },
           tooltip: {
             trigger: "item",
-            formatter: "{b}<br/>{c} (p / km2)",
           },
           toolbox: {
             show: true,
@@ -48,63 +50,58 @@ export default {
             left: "right",
             top: "center",
             feature: {
-              dataView: { readOnly: false },
+              dataView: {
+                readOnly: false,
+                show: true,
+                optionToContent() {
+                  return `<textarea style="width: 95%;" rows="50"></textarea>`
+                },
+                contentToOption(container, option) {
+                  let seriesData = []
+                  const dataString = container.querySelector("textarea").value
+                  const dataArr = dataString.split("\n")
+                  dataArr.forEach((item) => {
+                    const itemArr = item.split("\t")
+                    seriesData.push({
+                      name: itemArr[0],
+                      value: +itemArr[1],
+                    })
+                  })
+                  _this.cdata.seriesData = seriesData
+                },
+              },
               restore: {},
-              saveAsImage: {},
+              saveAsImage: {
+                type: "png",
+                pixelRatio: 5,
+              },
             },
           },
           visualMap: {
-            min: 800,
-            max: 50000,
+            min: newData.min,
+            max: newData.max,
+            type: "continuous",
             text: ["High", "Low"],
             realtime: false,
             calculable: true,
             inRange: {
-              color: ["lightskyblue", "yellow", "orangered"],
+              color: [newData.lowColor, newData.highColor],
             },
           },
           series: [
             {
-              name: "浙江省人口密度",
+              name: newData.title,
               type: "map",
-              map: "ZJ",
+              map: "YRDR",
               label: {
                 show: true,
+                fontSize: 9,
+                fontWeight: "lighter",
               },
-              data: [
-                { name: "杭州市", value: 20057.34 },
-                { name: "宁波市", value: 15477.48 },
-                { name: "温州市", value: 31686.1 },
-                { name: "嘉兴市", value: 6992.6 },
-                { name: "湖州市", value: 44045.49 },
-                { name: "绍兴市", value: 40689.64 },
-                { name: "金华市", value: 37659.78 },
-                { name: "衢州市", value: 45180.97 },
-                { name: "舟山市", value: 55204.26 },
-                { name: "台州市", value: 21900.9 },
-                { name: "丽水市", value: 4918.26 }, 
-              ],
-              // 自定义名称映射
-              // nameMap: {
-              //   "Central and Western": "中西区",
-              //   Eastern: "东区",
-              //   Islands: "离岛",
-              //   "Kowloon City": "九龙城",
-              //   "Kwai Tsing": "葵青",
-              //   "Kwun Tong": "观塘",
-              //   North: "北区",
-              //   "Sai Kung": "西贡",
-              //   "Sha Tin": "沙田",
-              //   "Sham Shui Po": "深水埗",
-              //   Southern: "南区",
-              //   "Tai Po": "大埔",
-              //   "Tsuen Wan": "荃湾",
-              //   "Tuen Mun": "屯门",
-              //   "Wan Chai": "湾仔",
-              //   "Wong Tai Sin": "黄大仙",
-              //   "Yau Tsim Mong": "油尖旺",
-              //   "Yuen Long": "元朗",
-              // },
+              roam: "move",
+              aspectScale: 0.75,
+              zoom: 1.1,
+              data: newData.seriesData,
             },
           ],
         }
@@ -112,39 +109,6 @@ export default {
       deep: true,
       immediate: true,
     },
-  },
-  beforeCreate() {
-    console.log("%cbeforeCreate 父组件", "color: pink")
-  },
-  created() {
-    console.log("%ccreated 父组件", "color: pink")
-    const promise = new Promise((resolve) => {
-      setTimeout(() => {
-        resolve("123")
-      }, 0)
-    })
-
-    promise.then((data) => {
-      // 为已有对象赋值多个新 property
-      const interObject = {
-        name: `byodian${data}`,
-        age: "21",
-        items: [150, 230, 224, 218, 135, 147, 260],
-      }
-
-      // 1. 对象字面量赋值替换
-      // this.adata = interObject
-
-      // 2. 使用 Vue.set(object, propertyName, value)
-      // this.$set(this.adata, 'name', `byodian${data}`)
-      // this.$set(this.adata, 'items', [150, 230, 224, 218, 135, 147, 260])
-
-      // 3. 使用 Object.assign() 赋值替换
-      // this.adata = Object.assign({}, this.adata, interObject)
-
-      // 4. 使用结构赋值
-      this.adata = { ...this.adata, ...interObject }
-    })
   },
   mounted() {
     // 窗口尺寸变化后，强制刷新图表组件宽高
@@ -154,26 +118,60 @@ export default {
         this.uid += 1
       }, 300)
     )
-
-    this.$nextTick(() => {
-      console.log("%c$nextTick mounted", "color: pink")
-    })
   },
-  beforeUpdate() {
-    console.log("%cbeforeUpdate 父组件", "color: pink")
-  },
-  updated() {
-    console.log("%cupdated 父组件", "color: pink")
-  },
+  methods: {
+    reset() {
+      this.cdata = {
+        min: 0,
+        max: 2,
+        lowColor: '#ffe8e8',
+        highColor: '#ff0000',
+      }
+    },
+    handleClick() {
+      console.log(this.cdata.min)
+    }
+  }
 }
 </script>
 
 <template>
   <div id="app">
+    <el-form label-width="auto" class="grid">
+      <el-form-item label="标题" class="col-start-1 col-end-3">
+        <el-input
+          v-model="cdata.title"
+          placeholder="请在这里修改图表标题"></el-input>
+      </el-form-item>
+      <el-form-item label="最小值">
+        <el-input-number
+          v-model="cdata.min"
+          :min="0"
+          :max="10" 
+          label="描述文字">
+        </el-input-number>
+      </el-form-item>
+      <el-form-item label="最小值">
+        <el-input-number
+          v-model="cdata.max"
+          :min="0"
+          :max="10" 
+          label="描述文字"
+          @change="handleClick">
+        </el-input-number>
+      </el-form-item>
+      <el-form-item label="最小值颜色">
+        <el-color-picker v-model="cdata.lowColor" @change="handleClick"></el-color-picker>
+      </el-form-item>
+      <el-form-item label="最大值颜色">
+        <el-color-picker v-model="cdata.highColor"></el-color-picker>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="reset">重置</el-button>
+      </el-form-item>
+    </el-form>
     <div class="box1">
-      <div
-        v-if="isShow"
-        class="b-com-wrapper">
+      <div class="b-com-wrapper">
         <b-component
           :key="uid"
           name="box1"
@@ -196,18 +194,18 @@ body {
 }
 
 #app {
-  text-align: center;
+  width: 800px;
+  margin: 20px auto;
   color: #2c3e50;
-  margin: 20px;
+  /* margin: 20px; */
   display: flex;
   flex-direction: column;
-  gap: 30px;
 }
 
 .box1 {
   display: flex;
   flex-direction: column;
-  height: 300px;
+  height: 750px;
 
   outline: 1px dashed #000;
 }
@@ -220,5 +218,18 @@ body {
   width: 100%;
   flex-basis: 100%;
   background-color: #f7fce5;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.col-start-1 {
+  grid-column-start: 1;
+}
+
+.col-end-3 {
+  grid-column-end: 3;
 }
 </style>
